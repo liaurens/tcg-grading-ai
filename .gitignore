@@ -1,0 +1,17 @@
+# Virtual environment: everyone creates their own from requirements.txt
+.venv/
+
+# Python bytecode cache
+__pycache__/
+*.pyc
+
+# PyCharm project settings are personal per group member
+.idea/
+
+# Generated intermediate/final results; keep the folder itself via .gitkeep
+output/*
+!output/.gitkeep
+
+# Dataset photos (~400 MB) are shared via OneDrive/Teams, not git; keep the folder itself
+data/*
+!data/.gitkeep
