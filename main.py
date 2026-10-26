@@ -9,7 +9,7 @@ from pathlib import Path
 from pipeline import classify, crop, features, io_utils, preprocess, report, undistort
 
 
-def grade_card(path: Path, models: dict, debug: bool) -> report.CardResult:
+def grade_card(path: Path, debug: bool) -> report.CardResult:
     """Full pipeline for one photo."""
     card_name = path.stem
 
@@ -22,7 +22,7 @@ def grade_card(path: Path, models: dict, debug: bool) -> report.CardResult:
     image = undistort.undistort(image)
     show(image, "2_undistort")
 
-    card = crop.crop_card(image)
+    card = crop.crop_card(image, show)
     show(card, "3_crop")
 
     gray = preprocess.to_gray(card)
@@ -32,7 +32,10 @@ def grade_card(path: Path, models: dict, debug: bool) -> report.CardResult:
     detail = preprocess.high_pass(gray)
     show(detail, "6_high_pass")
 
-    game = classify.classify_game(models, features.game_features(card))
+    # loaded only here: cropping and preprocessing run without any model
+    # TODO: load once for all photos as soon as the models exist
+    models = classify.load_models()
+    game =classify.classify_game(models, features.game_features(card))
     side = classify.classify_side(models, features.side_features(card))
     damage, score = classify.classify_damage(models, features.damage_features(gray, edges, detail))
 
@@ -47,10 +50,9 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        models = classify.load_models()
         for path in io_utils.list_images(args.folder):
             # OPEN: catch crop.CardNotFoundError per photo
-            result = grade_card(path, models, args.debug)
+            result = grade_card(path, args.debug)
             report.write_result(result, path)
     except NotImplementedError as missing:
         # skeleton: report first unbuilt function

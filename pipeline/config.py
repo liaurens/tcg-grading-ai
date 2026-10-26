@@ -16,6 +16,13 @@ CARD_WIDTH_MM = 63
 CARD_HEIGHT_MM = 88
 PX_PER_MM = 10  # provisional: 630x880 px, enough to see scratches
 
-# OPEN: crop parameters (depends on background)
+# Crop (step 3): Canny contour on white background (decision 2026-10-21).
+# Blur and kernel size were tuned at DETECT_SCALE; they only hold at that scale.
+DETECT_SCALE = 0.25        # find card on a 1/4 copy (1008x756): fast, and enough to locate the outline
+CROP_BLUR_SIGMA = 2        # smooths paper texture and noise so Canny only fires on the card outline
+CROP_CANNY_LOW = 40        # weak edge: kept only if connected to a strong edge (hysteresis)
+CROP_CANNY_HIGH = 120      # strong edge: surely a border (dark card edge vs white background)
+CROP_CLOSE_KERNEL_PX = 15  # ellipse that closes gaps in the outline up to ~15 px (~60 px full size)
+CROP_MIN_FILL = 0.90       # mask area / rectangle area; our 40 photos: 0.955-0.991, below 0.90 it is no card shape
 # OPEN: Canny + high-pass parameters
 # OPEN: damage threshold goed/beschadigd
