@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from pipeline import classify, crop, features, io_utils, preprocess, report, undistort
+from pipeline import classify, crop_3, features, io_utils_1, preprocess, report, undistort_2
 
 
 def grade_card(path: Path, debug: bool) -> report.CardResult:
@@ -16,13 +16,13 @@ def grade_card(path: Path, debug: bool) -> report.CardResult:
     def show(image, step_name):
         # save step image in debug mode
         if debug:
-            io_utils.save_debug_image(image, card_name, step_name)
+            io_utils_1.save_debug_image(image, card_name, step_name)
 
-    image = io_utils.load_image(path)
-    image = undistort.undistort(image)
+    image = io_utils_1.load_image(path)
+    image = undistort_2.undistort(image)
     show(image, "2_undistort")
 
-    card = crop.crop_card(image, show)
+    card = crop_3.crop_card(image, show)
     show(card, "3_crop")
 
     gray = preprocess.to_gray(card)
@@ -50,8 +50,8 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        for path in io_utils.list_images(args.folder):
-            # OPEN: catch crop.CardNotFoundError per photo
+        for path in io_utils_1.list_images(args.folder):
+            # OPEN: catch crop_3.CardNotFoundError per photo
             result = grade_card(path, args.debug)
             report.write_result(result, path)
     except NotImplementedError as missing:
