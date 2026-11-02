@@ -3,13 +3,44 @@
 python main.py data/<folder> [--debug]
 """
 import argparse
-import sys
 from pathlib import Path
+from typing import Callable
 
-from pipeline import classify, crop_3, features, io_utils_1, preprocess, report, undistort_2
+from pipeline import crop_3, damage_5, identify_4, io_utils_1, report_6, undistort_2
+from pipeline.damage_5 import combine
 
 
-def grade_card(path: Path, debug: bool) -> report.CardResult:
+def run_if_built(step: Callable[[], object], result: report_6.CardResult) -> object | None:
+    """Run one model. Not built yet: note it in the result and return None.
+
+    So one unbuilt model does not stop the others (decision 2026-11-02).
+    """
+    try:
+        return step()
+    except NotImplementedError as missing:
+        result.not_built.append(str(missing))
+        return None
+
+
+# Features before load_model in the 3 functions below: a model's preprocessing and debug
+# images can be built and checked before any model is trained.
+
+def predict_game(card) -> str:
+    features = identify_4.game_features(card)
+    return identify_4.predict_game(identify_4.load_game_model(), features)
+
+
+def predict_side(card) -> str:
+    features = identify_4.side_features(card)
+    return identify_4.predict_side(identify_4.load_side_model(), features)
+
+
+def damage_score(model, card, show) -> float:
+    features = model.features(model.preprocess(card, show))
+    return model.predict(model.load_model(), features)
+
+
+def grade_card(path: Path, debug: bool) -> report_6.CardResult:
     """Full pipeline for one photo."""
     card_name = path.stem
 
@@ -25,22 +56,21 @@ def grade_card(path: Path, debug: bool) -> report.CardResult:
     card = crop_3.crop_card(image, show)
     show(card, "3_crop")
 
-    gray = preprocess.to_gray(card)
-    show(gray, "4_gray")
-    edges = preprocess.detect_edges(gray)
-    show(edges, "5_canny")
-    detail = preprocess.high_pass(gray)
-    show(detail, "6_high_pass")
+    result = report_6.CardResult(photo=path.name)
 
-    # loaded only here: cropping and preprocessing run without any model
+    # step 4: which card. Models are loaded only here, so cropping works without any model.
     # TODO: load once for all photos as soon as the models exist
-    models = classify.load_models()
-    game =classify.classify_game(models, features.game_features(card))
-    side = classify.classify_side(models, features.side_features(card))
-    damage, score = classify.classify_damage(models, features.damage_features(gray, edges, detail))
+    result.game = run_if_built(lambda: predict_game(card), result)
+    result.side = run_if_built(lambda: predict_side(card), result)
 
-    return report.CardResult(photo=path.name, game=game, side=side,
-                             damage=damage, damage_score=score)
+    # step 5: every damage model on its own (the lambda runs right away, inside this loop turn)
+    for name, model in damage_5.MODELS.items():
+        result.damage_scores[name] = run_if_built(lambda: damage_score(model, card, show), result)
+
+    # combine only when every model gave a score: a missing score must not count as "goed"
+    if None not in result.damage_scores.values():
+        result.damage = run_if_built(lambda: combine.combine(result.damage_scores), result)
+    return result
 
 
 def main() -> None:
@@ -49,14 +79,19 @@ def main() -> None:
     parser.add_argument("--debug", action="store_true", help="save the image of every step")
     args = parser.parse_args()
 
-    try:
-        for path in io_utils_1.list_images(args.folder):
-            # OPEN: catch crop_3.CardNotFoundError per photo
-            result = grade_card(path, args.debug)
-            report.write_result(result, path)
-    except NotImplementedError as missing:
-        # skeleton: report first unbuilt function
-        sys.exit(f"Pipeline stopt: '{missing}' is nog niet gebouwd.")
+    not_built = set()
+    for path in io_utils_1.list_images(args.folder):
+        # OPEN: catch crop_3.CardNotFoundError per photo
+        result = grade_card(path, args.debug)
+        report_6.write_result(result, path)
+        not_built.update(result.not_built)
+        print(f"{result.photo}: game={result.game} side={result.side} "
+              f"damage={result.damage} scores={result.damage_scores}")
+
+    if not_built:
+        print("\nNog niet gebouwd (eerste ontbrekende functie per model):")
+        for name in sorted(not_built):
+            print(f"  {name}")
 
 
 if __name__ == "__main__":

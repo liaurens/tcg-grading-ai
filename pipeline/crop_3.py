@@ -3,26 +3,18 @@
 Method: Canny contour on white background (decision 2026-10-21).
 Search on a small copy, straighten from the full photo (decision 2026-10-25).
 """
-from typing import Callable
-
 import cv2
 import numpy as np
 
 from pipeline import config
-
-# show(image, step_name): called with every intermediate image (main passes its debug saver)
-ShowFn = Callable[[np.ndarray, str], None]
-
-
-def _no_show(image: np.ndarray, step_name: str) -> None:
-    """Default show: debug off, do nothing."""
+from pipeline.io_utils_1 import ShowFn, no_show
 
 
 class CardNotFoundError(Exception):
     """No card found in photo."""
 
 
-def find_card_mask(small: np.ndarray, show: ShowFn = _no_show) -> np.ndarray:
+def find_card_mask(small: np.ndarray, show: ShowFn = no_show) -> np.ndarray:
     """Mask: card white, background black. Input is the small (DETECT_SCALE) photo."""
     gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
     # ksize (0, 0): OpenCV picks the kernel size from sigma
@@ -58,7 +50,7 @@ def _touches_border(contour: np.ndarray, width: int, height: int) -> bool:
     return x == 0 or y == 0 or x + w >= width or y + h >= height
 
 
-def find_card_corners(mask: np.ndarray, show: ShowFn = _no_show) -> np.ndarray:
+def find_card_corners(mask: np.ndarray, show: ShowFn = no_show) -> np.ndarray:
     """4 corners (TL, TR, BR, BL) as float32 (4, 2), in mask coordinates.
 
     minAreaRect: smallest rotated rectangle around the card (decision 2026-10-25).
@@ -127,7 +119,7 @@ def warp_card(image: np.ndarray, corners: np.ndarray) -> np.ndarray:
     return cv2.resize(straight, (width, height), interpolation=cv2.INTER_AREA)
 
 
-def crop_card(image: np.ndarray, show: ShowFn = _no_show) -> np.ndarray:
+def crop_card(image: np.ndarray, show: ShowFn = no_show) -> np.ndarray:
     """Photo in, straight card out."""
     # INTER_AREA: averages pixels when shrinking, so no aliasing
     small = cv2.resize(image, None, fx=config.DETECT_SCALE, fy=config.DETECT_SCALE,

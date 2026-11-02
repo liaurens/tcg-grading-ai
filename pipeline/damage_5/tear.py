@@ -6,7 +6,7 @@ OPEN: needs the outline; crop_3 returns only the straight card, not the mask.
 """
 import numpy as np
 
-from pipeline.crop_3 import ShowFn, _no_show
+from pipeline.io_utils_1 import ShowFn, no_show
 
 
 def load_model() -> object:
@@ -14,7 +14,12 @@ def load_model() -> object:
     raise NotImplementedError("damage_5.tear.load_model")
 
 
-def preprocess(card: np.ndarray, show: ShowFn = _no_show) -> np.ndarray:
+def save_model(model: object) -> None:
+    """Save the trained model to models/ (same format load_model reads)."""
+    raise NotImplementedError("damage_5.tear.save_model")
+
+
+def preprocess(card: np.ndarray, show: ShowFn = no_show) -> np.ndarray:
     """Color card (880, 630, 3) BGR -> image in which missing pieces stand out."""
     raise NotImplementedError("damage_5.tear.preprocess")
 
@@ -27,3 +32,8 @@ def features(image: np.ndarray) -> np.ndarray:
 def predict(model: object, features: np.ndarray) -> float:
     """Tear score 0-1."""
     raise NotImplementedError("damage_5.tear.predict")
+
+
+def train(features: list[np.ndarray], labels: list[int]) -> object:
+    """Fit a model on features of the training photos. Label 1 = this damage, 0 = not."""
+    raise NotImplementedError("damage_5.tear.train")

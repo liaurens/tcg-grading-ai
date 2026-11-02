@@ -1,10 +1,18 @@
 """Read photos from a folder, save step images."""
 from pathlib import Path
+from typing import Callable
 
 import cv2
 import numpy as np
 
 from pipeline import config
+
+# show(image, step_name): steps call this with every intermediate image (main passes its debug saver)
+ShowFn = Callable[[np.ndarray, str], None]
+
+
+def no_show(image: np.ndarray, step_name: str) -> None:
+    """Default show: debug off, do nothing."""
 
 
 def list_images(folder: Path) -> list[Path]:

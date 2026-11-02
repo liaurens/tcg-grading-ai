@@ -24,5 +24,6 @@ CROP_CANNY_LOW = 40        # weak edge: kept only if connected to a strong edge 
 CROP_CANNY_HIGH = 120      # strong edge: surely a border (dark card edge vs white background)
 CROP_CLOSE_KERNEL_PX = 15  # ellipse that closes gaps in the outline up to ~15 px (~60 px full size)
 CROP_MIN_FILL = 0.90       # mask area / rectangle area; our 40 photos: 0.955-0.991, below 0.90 it is no card shape
-# OPEN: Canny + high-pass parameters
-# OPEN: damage threshold goed/beschadigd
+# Identify (step 4) and damage models (step 5): each model adds its own parameters
+# here, under its own heading (e.g. "# Scratch model (step 5a)").
+# OPEN: how damage_5.combine merges the scores + the threshold(s) goed/beschadigd
