@@ -12,7 +12,7 @@ Multistage: elk onderdeel heeft een eigen model (of, bij het uitsnijden, eigen r
 | 1 | Foto laden | `pipeline/io_utils_1.py` | klaar |
 | 2 | Lensvervorming corrigeren | `pipeline/undistort_2.py` | uitgesteld (geeft foto ongewijzigd terug) |
 | 3 | Kaart vinden, uitsnijden, rechttrekken naar 630×880 (regels, geen model) | `pipeline/crop_3.py` | klaar |
-| 4 | Welke kaart: game (MTG/Pokémon) en kant (voor/achter), 2 modellen | `pipeline/identify_4.py` | te bouwen |
+| 4 | Welke kleur kaart: Rood, groen, blauw, zwart of wit | `pipeline/identify_color_4.py` | klaar |
 | 5a | Krassen-model | `pipeline/damage_5/scratch.py` | te bouwen |
 | 5b | Vouwrandjes-model | `pipeline/damage_5/crease.py` | te bouwen |
 | 5c | Afscheuringen-model | `pipeline/damage_5/tear.py` | te bouwen |
@@ -28,19 +28,19 @@ Alle parameters staan met naam en reden in `pipeline/config.py`. Trainingscode s
 Python 3.12:
 
 ```
-python -m venv .venv
+python -3.12 -m venv .venv
 .venv\Scripts\activate          # Windows
 pip install -r requirements.txt
 ```
 
-De foto's staan niet in git. Zet de dataset (via OneDrive/Teams) in `data/`, bijvoorbeeld `data/schade_class_v2/complete_dataset/`.
+De foto's staan niet in git. Zet de dataset (via OneDrive/Teams) in `data/`, bijvoorbeeld `data/complete_dataset/`.
 
 ## Gebruik
 
 ### Hele pipeline (eindresultaat)
 
 ```
-python main.py data/schade_class_v2/complete_dataset
+python main.py data/complete_dataset
 ```
 
 Per kaart komt er een map `output/results/<fotonaam>/` met `result.json` (game, kant, schade, score per schademodel, fout, nog niet gebouwd) en een kopie van de originele foto.
@@ -51,7 +51,7 @@ Per kaart komt er een map `output/results/<fotonaam>/` met `result.json` (game, 
 ### Tussenstappen bekijken (`--debug`)
 
 ```
-python main.py data/schade_class_v2/complete_dataset --debug
+python main.py data/complete_dataset --debug
 ```
 
 Slaat per kaart een PNG per (sub)stap op in `output/debug/<fotonaam>/`. Zonder `--debug` wordt er niets opgeslagen.
@@ -76,7 +76,7 @@ from pathlib import Path
 import cv2
 from pipeline import crop_3, io_utils_1
 
-image = io_utils_1.load_image(Path("data/schade_class_v2/complete_dataset/wit_kras_02.jpeg"))
+image = io_utils_1.load_image(Path("data/complete_dataset/wit_kras_02.jpeg"))
 card = crop_3.crop_card(image)               # array (880, 630, 3): hoogte, breedte, BGR
 cv2.imwrite("output/kaart.png", card)
 ```
@@ -89,6 +89,12 @@ card = crop_3.crop_card(image, show)
 ```
 
 Lukt het uitsnijden niet (geen kaartvorm gevonden), dan volgt `crop_3.CardNotFoundError` met de reden.
+
+## Kleuren model trainen en testen
+```
+python -m training.train_color
+python -m training.train_color --test
+```
 
 ## Een model trainen en testen
 

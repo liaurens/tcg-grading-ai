@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 from typing import Callable
 
-from pipeline import crop_3, damage_5, identify_4, io_utils_1, report_6, undistort_2
+from pipeline import crop_3, damage_5, identify_color_4, io_utils_1, report_6, undistort_2
 from pipeline.damage_5 import combine
 
 
@@ -25,14 +25,9 @@ def run_if_built(step: Callable[[], object], result: report_6.CardResult) -> obj
 # Features before load_model in the 3 functions below: a model's preprocessing and debug
 # images can be built and checked before any model is trained.
 
-def predict_game(card) -> str:
-    features = identify_4.game_features(card)
-    return identify_4.predict_game(identify_4.load_game_model(), features)
-
-
-def predict_side(card) -> str:
-    features = identify_4.side_features(card)
-    return identify_4.predict_side(identify_4.load_side_model(), features)
+def predict_color(card) -> str:
+    features = identify_color_4.features(card)
+    return identify_color_4.predict(identify_color_4.load_model(), features)
 
 
 def damage_score(model, card, show) -> float:
@@ -58,10 +53,9 @@ def grade_card(path: Path, debug: bool) -> report_6.CardResult:
 
     result = report_6.CardResult(photo=path.name)
 
-    # step 4: which card. Models are loaded only here, so cropping works without any model.
+    # step 4: which card color. Models are loaded only here, so cropping works without any model.
     # TODO: load once for all photos as soon as the models exist
-    result.game = run_if_built(lambda: predict_game(card), result)
-    result.side = run_if_built(lambda: predict_side(card), result)
+    result.color = run_if_built(lambda: predict_color(card), result)
 
     # step 5: every damage model on its own (the lambda runs right away, inside this loop turn)
     for name, model in damage_5.MODELS.items():
@@ -85,7 +79,7 @@ def main() -> None:
         result = grade_card(path, args.debug)
         report_6.write_result(result, path)
         not_built.update(result.not_built)
-        print(f"{result.photo}: game={result.game} side={result.side} "
+        print(f"{result.photo}: color={result.color} "
               f"damage={result.damage} scores={result.damage_scores}")
 
     if not_built:
