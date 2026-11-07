@@ -11,8 +11,7 @@ from pipeline import config
 class CardResult:
     """Result of one card. None = not known (model not built yet, or error)."""
     photo: str
-    game: str | None = None    # "mtg" / "pokemon"
-    side: str | None = None    # "front" / "back"
+    color: str | None = None   # "red" / "green" / "blue" / "black" / "white"
     damage: str | None = None  # "goed" / "beschadigd" (from damage_5.combine)
     # score 0-1 per damage model, e.g. {"scratch": 0.1, "crease": None, "tear": 0.9}
     damage_scores: dict[str, float | None] = field(default_factory=dict)
