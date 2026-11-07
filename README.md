@@ -43,7 +43,7 @@ De foto's staan niet in git. Zet de dataset (via OneDrive/Teams) in `data/`, bij
 python main.py data/complete_dataset
 ```
 
-Per kaart komt er een map `output/results/<fotonaam>/` met `result.json` (game, kant, schade, score per schademodel, fout, nog niet gebouwd) en een kopie van de originele foto.
+Per kaart komt er een map `output/results/<fotonaam>/` met `result.json` (kleur, schade, score per schademodel, fout, nog niet gebouwd) en een kopie van de originele foto.
 
 > Een model dat nog niet gebouwd is, wordt overgeslagen (waarde `null`); de andere modellen draaien gewoon door.
 > Aan het eind meldt het programma per model de eerste functie die nog gebouwd moet worden, bijv. `damage_5.tear.preprocess`.
