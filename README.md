@@ -101,7 +101,7 @@ python -m training.train_color --test
 Elk model wordt los getraind en getest:
 
 ```
-python -m training.train tear        # of: game, side, scratch, crease
+python -m training.train tear        # of: scratch, crease
 python -m training.evaluate tear
 ```
 
