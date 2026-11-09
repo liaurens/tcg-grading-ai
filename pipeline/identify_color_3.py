@@ -1,5 +1,7 @@
-"""Step 4: which color card is it? Red, green, blue, black or white.
+"""Step 3: which color is the card? white / green / red / blue / black.
 
+One model with: load/save model, features, predict, train.
+Works on the color card from step 2 (MTG fronts only, decision 2026-11-07).
 """
 import cv2
 import numpy as np
@@ -159,7 +161,7 @@ def train(
     labels: list[str]
 ) -> object:
     """
-    Train a three-class color classifier.
+    Train a five-class color classifier.
 
     Labels:
         white

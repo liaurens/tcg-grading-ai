@@ -1,7 +1,7 @@
 # TCG grading door AI (EASMVI70, groep 13)
 
 Een vereenvoudigde, PSA-achtige kwaliteitscontrole voor ruilkaarten. Per foto van één kaart bepaalt de pipeline:
-Pokémon of MTG, voor- of achterkant, en **Goed** of **Beschadigd** (krassen, vouwen, scheuren).
+de kleur van de (MTG-)kaart, en **Goed** of **Beschadigd** (krassen, vouwen, scheuren).
 
 ## Pipeline
 
@@ -13,9 +13,8 @@ Multistage: elk onderdeel heeft een eigen model (of, bij het uitsnijden, eigen r
 | 2 | Lensvervorming corrigeren | `pipeline/undistort_2.py` | uitgesteld (geeft foto ongewijzigd terug) |
 | 3 | Kaart vinden, uitsnijden, rechttrekken naar 630×880 (regels, geen model) | `pipeline/crop_3.py` | klaar |
 | 4 | Welke kleur kaart: Rood, groen, blauw, zwart of wit | `pipeline/identify_color_4.py` | klaar |
-| 5a | Krassen-model | `pipeline/damage_5/scratch.py` | te bouwen |
-| 5b | Vouwrandjes-model | `pipeline/damage_5/crease.py` | te bouwen |
-| 5c | Afscheuringen-model | `pipeline/damage_5/tear.py` | te bouwen |
+| 5a | Lijnschade-model: krassen + vouwrandjes | `pipeline/damage_5/lines.py` | te bouwen |
+| 5b | Afscheuringen-model | `pipeline/damage_5/tear.py` | te bouwen |
 | 5d | Scores samenvoegen tot Goed/Beschadigd | `pipeline/damage_5/combine.py` | te bouwen |
 | 6 | Resultaat + originele foto opslaan | `pipeline/report_6.py` | klaar |
 
@@ -65,7 +64,7 @@ Slaat per kaart een PNG per (sub)stap op in `output/debug/<fotonaam>/`. Zonder `
 | `3d_mask.png` | Masker: kaart wit, achtergrond zwart |
 | `3e_corners.png` | Masker met de gevonden rechthoek en hoeknummers 0–3 |
 | `3_crop.png` | Rechtgetrokken kaart, 630×880 |
-| `5a_…`, `5b_…`, `5c_…` | Tussenplaatjes van het krassen-, vouwrandjes- en afscheuringenmodel |
+| `5a_…`, `5b_…` | Tussenplaatjes van het lijnschade- en afscheuringenmodel |
 
 ### Eén stap los gebruiken (vanuit Python)
 
@@ -101,7 +100,7 @@ python -m training.train_color --test
 Elk model wordt los getraind en getest:
 
 ```
-python -m training.train tear        # of: scratch, crease
+python -m training.train tear        # of: lines
 python -m training.evaluate tear
 ```
 
@@ -111,13 +110,13 @@ Elk schademodel is één bestand in `pipeline/damage_5/` met dezelfde 6 functies
 
 | Functie | Doet |
 | --- | --- |
-| `preprocess(card, show)` | kaart → plaatje waarin deze schade opvalt; tussenplaatjes via `show(img, "5c_…")` |
+| `preprocess(card, show)` | kaart → plaatje waarin deze schade opvalt; tussenplaatjes via `show(img, "5b_…")` |
 | `features(image)` | plaatje → getallen voor de classifier |
 | `train(features, labels)` | getraind model (label 1 = deze schade, 0 = niet) |
 | `save_model(model)` / `load_model()` | model opslaan in / laden uit `models/` |
 | `predict(model, features)` | schadescore 0–1 |
 
 - **Bouwvolgorde:** begin met `preprocess` en `features` en bekijk de plaatjes met `--debug`. Daarvoor is nog geen getraind model nodig.
-- **Nieuw model** (bijv. snedes): kopieer `scratch.py` naar `cut.py`, bouw de 6 functies en zet één regel in `MODELS` in `pipeline/damage_5/__init__.py`.
+- **Nieuw model** (bijv. snedes): kopieer `lines.py` naar `cut.py`, bouw de 6 functies en zet één regel in `MODELS` in `pipeline/damage_5/__init__.py`.
 - **Parameters** van je model komen in `pipeline/config.py`, onder een eigen kopje.
 - **Samenwerken:** werk in je eigen modelbestand; dan zit je niet in de code van een ander.

@@ -1,4 +1,4 @@
-"""Step 5: damage. One model per damage type (decision 2026-11-02).
+"""Step 4: damage. One model per damage type (decision 2026-11-02).
 
 Every model file has the same 6 functions, so main and training call them the same way:
     load_model()               -> trained model from models/
@@ -10,14 +10,13 @@ Every model file has the same 6 functions, so main and training call them the sa
 
 Debug images of a model: show(image, "5a_..."), with the letter of that model below.
 
-Add a model: copy scratch.py, build the 6 functions, add one line to MODELS.
+Add a model: copy lines.py, build the 6 functions, add one line to MODELS.
 combine.py turns the scores of all models into "goed" or "beschadigd".
 """
-from pipeline.damage_5 import crease, scratch, tear
+from pipeline.damage_4 import lines, tear
 
 # name -> module; main and training/ loop over this, in this order
 MODELS = {
-    "scratch": scratch,  # 5a
-    "crease": crease,    # 5b
-    "tear": tear,        # 5c
+    "lines": lines,  # 5a: scratches + creases (decision 2026-11-05)
+    "tear": tear,    # 5b
 }

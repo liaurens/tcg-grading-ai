@@ -1,4 +1,4 @@
-"""Step 3: find card, cut out, straighten to portrait 63:88.
+"""Step 2: find card, cut out, straighten to portrait 63:88.
 
 Method: Canny contour on white background (decision 2026-10-21).
 Search on a small copy, straighten from the full photo (decision 2026-10-25).
@@ -19,15 +19,15 @@ def find_card_mask(small: np.ndarray, show: ShowFn = no_show) -> np.ndarray:
     gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
     # ksize (0, 0): OpenCV picks the kernel size from sigma
     blurred = cv2.GaussianBlur(gray, (0, 0), config.CROP_BLUR_SIGMA)
-    show(blurred, "3a_blur")
+    show(blurred, "2a_blur")
 
     edges = cv2.Canny(blurred, config.CROP_CANNY_LOW, config.CROP_CANNY_HIGH)
-    show(edges, "3b_canny")
+    show(edges, "2b_canny")
 
     kernel = cv2.getStructuringElement(
         cv2.MORPH_ELLIPSE, (config.CROP_CLOSE_KERNEL_PX, config.CROP_CLOSE_KERNEL_PX))
     closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
-    show(closed, "3c_closed")
+    show(closed, "2c_closed")
 
     # RETR_EXTERNAL: only outer outlines, ignore the art/text lines inside the card
     contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -40,7 +40,7 @@ def find_card_mask(small: np.ndarray, show: ShowFn = no_show) -> np.ndarray:
     mask = np.zeros_like(closed)
     # thickness -1: fill the inside, so the mask is a solid card shape
     cv2.drawContours(mask, [card], -1, 255, thickness=-1)
-    show(mask, "3d_mask")
+    show(mask, "2d_mask")
     return mask
 
 
@@ -72,7 +72,7 @@ def find_card_corners(mask: np.ndarray, show: ShowFn = no_show) -> np.ndarray:
     for i, (x, y) in enumerate(corners):
         # number = position in output: 0 TL, 1 TR, 2 BR, 3 BL
         cv2.putText(overlay, str(i), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 200, 0), 2)
-    show(overlay, "3e_corners")
+    show(overlay, "2e_corners")
     return corners
 
 

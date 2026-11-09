@@ -15,10 +15,13 @@ from sklearn.metrics import (
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from pipeline import crop_3, undistort_2, io_utils_1, identify_color_4
+from pipeline import crop_2, io_utils_1, identify_color_3
 
 # Dataset locaties
-DATASET_DIR = PROJECT_ROOT / "data" 
+from pipeline import config  # noqa: E402
+
+# same dataset as the damage models (data/final_dataset/<split>/<color>/); was data/<split>/, which does not exist
+DATASET_DIR = config.DATASET_DIR
 
 TRAIN_DIR = DATASET_DIR / "train_dataset"
 VALIDATE_DIR = DATASET_DIR / "validate_dataset"
@@ -56,14 +59,11 @@ def load_dataset(folder: Path):
                 print(f"Could not load: {path}")
                 continue
 
-            # Stap 1: perspectiefcorrectie
-            image = undistort_2.undistort(image)
-
             # Stap 2: kaart uitsnijden
-            card = crop_3.crop_card(image, io_utils_1.no_show)
+            card = crop_2.crop_card(image, io_utils_1.no_show)
 
             # Extract features
-            feature = identify_color_4.features(card)
+            feature = identify_color_3.features(card)
 
             features.append(feature)
             labels.append(label)
@@ -123,7 +123,7 @@ def main():
     if args.test:
 
         print("\nLoading saved model...")
-        model = identify_color_4.load_model()
+        model = identify_color_3.load_model()
 
         print("\nLoading test dataset...")
         X_test, y_test = load_dataset(TEST_DIR)
@@ -143,7 +143,7 @@ def main():
 
     print("\nTraining color classifier...")
 
-    model = identify_color_4.train(
+    model = identify_color_3.train(
         X_train.tolist(),
         y_train.tolist()
     )
@@ -160,7 +160,7 @@ def main():
     )
 
     # SAVE
-    identify_color_4.save_model(model)
+    identify_color_3.save_model(model)
 
     print("\nModel saved successfully!")
 

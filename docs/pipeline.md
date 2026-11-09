@@ -10,13 +10,11 @@ De pipeline krijgt een map met kaartfoto's en geeft per kaart drie oordelen: Pok
 flowchart TD
     S1["1 Foto laden<br/>io_utils_1, volle resolutie"] --> S2["2 Undistort<br/>uitgesteld, nu ongewijzigd"]
     S2 --> S3["3 Uitsnijden (regels)<br/>Canny-contour naar 630×880"]
-    S3 --> S4["4 Welke kleur kaart"]
-    S3 --> S5a["5a Krassen-model"]
-    S3 --> S5b["5b Vouwrandjes-model"]
-    S3 --> S5c["5c Afscheuringen-model"]
+    S3 --> S4["4 Welke kaart<br/>game-model + kant-model"]
+    S3 --> S5a["5a Lijnschade-model<br/>krassen + vouwrandjes"]
+    S3 --> S5b["5b Afscheuringen-model"]
     S5a --> S5d["5d Combine<br/>scores naar goed of beschadigd"]
     S5b --> S5d
-    S5c --> S5d
     S4 --> S6["6 Resultaat<br/>result.json + originele foto"]
     S5d --> S6
 ```
@@ -28,10 +26,9 @@ Alle modellen krijgen dezelfde uitgesneden kleurenkaart. Elk schademodel doet zi
 | 1 | Foto laden | `pipeline/io_utils_1.py` | Klaar |
 | 2 | Lensvervorming corrigeren (undistort) | `pipeline/undistort_2.py` | Uitgesteld |
 | 3 | Kaart vinden, uitsnijden en rechttrekken (regels) | `pipeline/crop_3.py` | Klaar |
-| 4 | Kleur (Rood, groen, blauw, zwart, wit) | `pipeline/identify_color_4.py` | Klaar |
-| 5a | Krassen | `pipeline/damage_5/scratch.py` | Te bouwen |
-| 5b | Vouwrandjes | `pipeline/damage_5/crease.py` | Te bouwen |
-| 5c | Afscheuringen | `pipeline/damage_5/tear.py` | Te bouwen |
+| 4 | Game (MTG/Pokémon) en kant (voor/achter) | `pipeline/identify_4.py` | Te bouwen |
+| 5a | Lijnschade: krassen + vouwrandjes | `pipeline/damage_5/lines.py` | Eerste versie (oude dataset: train 80%, val 58%, test 5/7) |
+| 5b | Afscheuringen | `pipeline/damage_5/tear.py` | Te bouwen |
 | 5d | Scores samenvoegen | `pipeline/damage_5/combine.py` | Te bouwen |
 | 6 | Resultaat + originele foto opslaan | `pipeline/report_6.py` | Klaar |
 
@@ -47,7 +44,7 @@ python main.py data/schade_class_v2/complete_dataset --debug
 
 - **Invoer:** een map met `.jpg`, `.jpeg` of `.png`. De foto's worden op naam gesorteerd en één voor één verwerkt.
 - **Eindresultaat:** per kaart een map `output/results/<fotonaam>/` met `result.json` (game, kant, schade, score per schademodel, fout, nog niet gebouwd) en een kopie van de originele foto.
-- **Tussenresultaten (`--debug`):** per kaart een map `output/debug/<fotonaam>/` met een PNG per (sub)stap en een JSON bestand over de kleurherkenning. Zonder `--debug` wordt er niets opgeslagen, dus geen schijfruimte gebruikt.
+- **Tussenresultaten (`--debug`):** per kaart een map `output/debug/<fotonaam>/` met een PNG per (sub)stap. Zonder `--debug` wordt er niets opgeslagen, dus geen schijfruimte gebruikt.
 - **Nog niet gebouwde modellen** worden overgeslagen (waarde `null` in `result.json`); de andere modellen draaien door. Aan het eind meldt het programma per model de eerste functie die nog gebouwd moet worden, bijv. `damage_5.tear.preprocess`. Zo kan iedereen los aan een eigen model werken.
 
 | Debugplaatje | Wat je ziet |
@@ -59,9 +56,9 @@ python main.py data/schade_class_v2/complete_dataset --debug
 | `3d_mask.png` | Het masker: kaart wit, achtergrond zwart |
 | `3e_corners.png` | Masker met rechthoek en hoeknummers 0–3 |
 | `3_crop.png` | De rechtgetrokken kaart, 630×880 |
-| `4_color.json` | Json bestand met daarin informatie over het komen tot de kleurkeuze |
-| `4_color.png` | Het gedeelte van de kaart waar de kleurherkenning plaatsvindt en een diagram met de kleurkeuze |
-| `5a_…` / `5b_…` / `5c_…` | Tussenplaatjes van het krassen-, vouwrandjes- en afscheuringenmodel |
+| `5a_gray.png` | Lijnschade: grijze kaart |
+| `5a_highpass.png` | Lijnschade: hoeveel lichter elke pixel is dan zijn omgeving (×4 versterkt om te kunnen zien) |
+| `5b_…` | Tussenplaatjes van het afscheuringenmodel |
 
 Installeren: Python 3.12, een `venv`, en `pip install -r requirements.txt` (OpenCV en NumPy, vastgepinde versies).
 
@@ -115,27 +112,27 @@ Stap 3 vindt de kaart op de witte achtergrond en levert een rechte, staande kaar
 
 ## Stap 4 — Welke kaart: game en kant (te bouwen)
 
-Stap 4 bepaalt met een model de kleur van de kaart. Het model werkt met de gecropte kaart van stap 3. Bestand: `pipeline/identify_color_4.py`.
+Stap 4 bepaalt met twee modellen of het een MTG- of Pokémon-kaart is, en of het de voor- of achterkant is. Beide werken op de kleurenkaart van stap 3. Bestand: `pipeline/identify_4.py`. Welke features en welk type classifier is nog open.
 
 - Per model: `…_features(card)`, `train_…`, `save_…_model` / `load_…_model` en `predict_…`.
+- Nu staan alleen MTG-voorkanten in de dataset; game en kant staan nog niet in de bestandsnamen.
 
 ## Stap 5 — Schade: één model per soort (te bouwen)
 
-Elke soort schade heeft een eigen model in `pipeline/damage_5/` (beslissing 2026-11-02). Elk model doet zijn eigen voorbewerking, omdat elke soort schade anders zichtbaar is:
+Schade wordt gezocht door twee modellen in `pipeline/damage_5/` (beslissingen 2026-11-02 en 2026-11-05: krassen en vouwrandjes zijn samengevoegd, omdat ze er met schuin licht allebei uitzien als lichte lijnen). Elk model doet zijn eigen voorbewerking, omdat elke soort schade anders zichtbaar is:
 
 | Model | Bestand | Wat | Idee |
 | --- | --- | --- | --- |
-| 5a krassen | `scratch.py` | korte, fijne lijntjes op het oppervlak | high-pass houdt alleen fijn detail over |
-| 5b vouwrandjes | `crease.py` | teruggevouwen vouw met een randje | lange, rechte, lichtere lijn: het randje vangt het schuine licht |
-| 5c afscheuringen | `tear.py` | er ontbreekt een stuk kaart | zichtbaar aan de omtrek (nodig: het masker uit stap 3) |
+| 5a lijnschade | `lines.py` | krassen (fijne lijntjes) en vouwrandjes (teruggevouwen vouw met een randje) | lichte lijnen; logistische regressie |
+| 5b afscheuringen | `tear.py` | er ontbreekt een stuk kaart | zichtbaar aan de omtrek (nodig: het masker uit stap 3) |
 | 5d combine | `combine.py` | scores naar Goed / Beschadigd | open: één model boven zijn drempel, of één gecombineerde score |
 
 **Elk schademodel heeft dezelfde 6 functies**, zodat `main.py` en `training/` ze allemaal op dezelfde manier aanroepen: `preprocess(card, show)`, `features(image)`, `train(features, labels)`, `save_model(model)`, `load_model()` en `predict(model, features)` (score 0–1). De lijst `MODELS` in `damage_5/__init__.py` zegt welke modellen er zijn.
 
-- **Een model toevoegen** (later bijv. snedes of dichte vouwen): kopieer `scratch.py`, bouw de 6 functies, zet één regel in `MODELS`.
+- **Een model toevoegen** (later bijv. snedes of dichte vouwen): kopieer `lines.py`, bouw de 6 functies, zet één regel in `MODELS`.
 - **Bouwvolgorde:** `main.py` roept eerst `preprocess` en `features` aan, pas daarna `load_model`. Je kunt de voorbewerking dus met `--debug` bekijken voordat er een getraind model is.
 - **Niet gebouwd = overslaan:** `main.py` vangt `NotImplementedError` per model af, zodat één onaf model de rest niet blokkeert. `combine` draait pas als alle schademodellen een score geven, want een ontbrekende score mag niet als "goed" tellen.
-- **Labels** komen uit de bestandsnaam (`training/dataset.py`): `kras` = krassen, `vouw` = vouwrandjes, `scheur` = afscheuringen, `geen` = 0 voor elk model. `mix` doet voorlopig niet mee: niet bekend welke schade erop zit.
+- **Labels** komen uit de bestandsnaam (`training/dataset.py`): `kras` en `vouw` = 1 voor lijnschade, `scheur` = 1 voor afscheuringen en 0 voor lijnschade, `geen` = 0 voor elk model. `mix` doet voorlopig niet mee: niet bekend welke schade erop zit.
 
 ## Stap 6 — Resultaat
 
@@ -143,7 +140,13 @@ Per kaart `output/results/<fotonaam>/result.json` met `photo`, `game`, `side`, `
 
 ## Training
 
-`python -m training.train <model>` en `python -m training.evaluate <model>`, met `<model>` = `scratch`, `crease` of `tear`. Het algemene deel (foto's laden, uitsnijden, label per model, splitsen) staat in `training/`; het modelspecifieke deel (`train`, `save_model`) in het modelbestand zelf. Nog open: labelformaat, train/val/test-verdeling en metrics.
+`python -m training.train <model>` en `python -m training.evaluate <model>`, met `<model>` = `game`, `side`, `lines` of `tear`. Het algemene deel (foto's laden, uitsnijden, label per model, splitsen) staat in `training/`; het modelspecifieke deel (`train`, `save_model`) in het modelbestand zelf.
+
+- **Data:** `--data <map>` met de submappen `train_dataset/`, `validate_dataset/` en `test_dataset/`. Standaard is `config.DATASET_DIR` (`data/schade_class_v2`). De split komt uit die mappen.
+- **`train`** traint op `train_dataset`, slaat het model op in `models/` en print het rapport voor train en validate. **`evaluate`** print het rapport voor `test_dataset`.
+- **Rapport:** score per foto, confusion matrix, accuracy, precision en recall. Een score ≥ 0,5 telt daarin als schade; dat is alleen voor het rapport, de echte drempel komt in `combine`.
+- **Lijnschade-model (5a):** features = 99e percentiel van het high-pass-beeld + log(1 + lengte van lange schuine lijnen, `HoughLinesP`); classifier = `StandardScaler` + `LogisticRegression` (scikit-learn), opgeslagen als `models/lines.joblib`.
+- Nog open: labelformaat en welke fout het ergst is.
 
 ## Open punten en beperkingen
 
