@@ -10,7 +10,7 @@ De pipeline krijgt een map met kaartfoto's en geeft per kaart drie oordelen: Pok
 flowchart TD
     S1["1 Foto laden<br/>io_utils_1, volle resolutie"] --> S2["2 Undistort<br/>uitgesteld, nu ongewijzigd"]
     S2 --> S3["3 Uitsnijden (regels)<br/>Canny-contour naar 630×880"]
-    S3 --> S4["4 Welke kaart<br/>game-model + kant-model"]
+    S3 --> S4["4 Welke kleur kaart"]
     S3 --> S5a["5a Krassen-model"]
     S3 --> S5b["5b Vouwrandjes-model"]
     S3 --> S5c["5c Afscheuringen-model"]
@@ -28,7 +28,7 @@ Alle modellen krijgen dezelfde uitgesneden kleurenkaart. Elk schademodel doet zi
 | 1 | Foto laden | `pipeline/io_utils_1.py` | Klaar |
 | 2 | Lensvervorming corrigeren (undistort) | `pipeline/undistort_2.py` | Uitgesteld |
 | 3 | Kaart vinden, uitsnijden en rechttrekken (regels) | `pipeline/crop_3.py` | Klaar |
-| 4 | Game (MTG/Pokémon) en kant (voor/achter) | `pipeline/identify_4.py` | Te bouwen |
+| 4 | Kleur (Rood, groen, blauw, zwart, wit) | `pipeline/identify_color_4.py` | Klaar |
 | 5a | Krassen | `pipeline/damage_5/scratch.py` | Te bouwen |
 | 5b | Vouwrandjes | `pipeline/damage_5/crease.py` | Te bouwen |
 | 5c | Afscheuringen | `pipeline/damage_5/tear.py` | Te bouwen |
@@ -47,7 +47,7 @@ python main.py data/schade_class_v2/complete_dataset --debug
 
 - **Invoer:** een map met `.jpg`, `.jpeg` of `.png`. De foto's worden op naam gesorteerd en één voor één verwerkt.
 - **Eindresultaat:** per kaart een map `output/results/<fotonaam>/` met `result.json` (game, kant, schade, score per schademodel, fout, nog niet gebouwd) en een kopie van de originele foto.
-- **Tussenresultaten (`--debug`):** per kaart een map `output/debug/<fotonaam>/` met een PNG per (sub)stap. Zonder `--debug` wordt er niets opgeslagen, dus geen schijfruimte gebruikt.
+- **Tussenresultaten (`--debug`):** per kaart een map `output/debug/<fotonaam>/` met een PNG per (sub)stap en een JSON bestand over de kleurherkenning. Zonder `--debug` wordt er niets opgeslagen, dus geen schijfruimte gebruikt.
 - **Nog niet gebouwde modellen** worden overgeslagen (waarde `null` in `result.json`); de andere modellen draaien door. Aan het eind meldt het programma per model de eerste functie die nog gebouwd moet worden, bijv. `damage_5.tear.preprocess`. Zo kan iedereen los aan een eigen model werken.
 
 | Debugplaatje | Wat je ziet |
@@ -59,6 +59,8 @@ python main.py data/schade_class_v2/complete_dataset --debug
 | `3d_mask.png` | Het masker: kaart wit, achtergrond zwart |
 | `3e_corners.png` | Masker met rechthoek en hoeknummers 0–3 |
 | `3_crop.png` | De rechtgetrokken kaart, 630×880 |
+| `4_color.json` | Json bestand met daarin informatie over het komen tot de kleurkeuze |
+| `4_color.png` | Het gedeelte van de kaart waar de kleurherkenning plaatsvindt en een diagram met de kleurkeuze |
 | `5a_…` / `5b_…` / `5c_…` | Tussenplaatjes van het krassen-, vouwrandjes- en afscheuringenmodel |
 
 Installeren: Python 3.12, een `venv`, en `pip install -r requirements.txt` (OpenCV en NumPy, vastgepinde versies).
@@ -113,10 +115,9 @@ Stap 3 vindt de kaart op de witte achtergrond en levert een rechte, staande kaar
 
 ## Stap 4 — Welke kaart: game en kant (te bouwen)
 
-Stap 4 bepaalt met twee modellen of het een MTG- of Pokémon-kaart is, en of het de voor- of achterkant is. Beide werken op de kleurenkaart van stap 3. Bestand: `pipeline/identify_4.py`. Welke features en welk type classifier is nog open.
+Stap 4 bepaalt met een model de kleur van de kaart. Het model werkt met de gecropte kaart van stap 3. Bestand: `pipeline/identify_color_4.py`.
 
 - Per model: `…_features(card)`, `train_…`, `save_…_model` / `load_…_model` en `predict_…`.
-- Nu staan alleen MTG-voorkanten in de dataset; game en kant staan nog niet in de bestandsnamen.
 
 ## Stap 5 — Schade: één model per soort (te bouwen)
 
@@ -142,7 +143,7 @@ Per kaart `output/results/<fotonaam>/result.json` met `photo`, `game`, `side`, `
 
 ## Training
 
-`python -m training.train <model>` en `python -m training.evaluate <model>`, met `<model>` = `game`, `side`, `scratch`, `crease` of `tear`. Het algemene deel (foto's laden, uitsnijden, label per model, splitsen) staat in `training/`; het modelspecifieke deel (`train`, `save_model`) in het modelbestand zelf. Nog open: labelformaat, train/val/test-verdeling en metrics.
+`python -m training.train <model>` en `python -m training.evaluate <model>`, met `<model>` = `scratch`, `crease` of `tear`. Het algemene deel (foto's laden, uitsnijden, label per model, splitsen) staat in `training/`; het modelspecifieke deel (`train`, `save_model`) in het modelbestand zelf. Nog open: labelformaat, train/val/test-verdeling en metrics.
 
 ## Open punten en beperkingen
 
