@@ -56,6 +56,9 @@ python main.py data/final_dataset/complete_dataset --debug
 | `2_crop.png` | De rechtgetrokken kaart, 630×880 |
 | `4a_gray.png` | Lijnschade: grijze kaart |
 | `4a_highpass.png` | Lijnschade: hoeveel lichter elke pixel is dan zijn omgeving (×4 versterkt om te kunnen zien) |
+| `4a_bright.png` | Lijnschade: de pixels boven `LINES_BRIGHT` (invoer van Hough) |
+| `4a_lines.png` | Lijnschade: de Hough-lijnen op die pixels (geel = schuin, telt mee; blauw = langs het kader, telt niet) |
+| `4_color.png`, `4_color.json` | Kleur: het stuk van de kaart waar het model naar kijkt, en de kans per kleur |
 | `4b_…` | Tussenplaatjes van het afscheuringenmodel |
 
 Installeren: Python 3.12, een `venv`, en `pip install -r requirements.txt` (OpenCV en NumPy, vastgepinde versies).

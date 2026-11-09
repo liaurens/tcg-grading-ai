@@ -258,6 +258,9 @@ Import-Csv output\results\overzicht.csv -Delimiter ';' | Group-Object kleur, sch
 | `2_crop.png` | rechtgetrokken kaart, 630×880: **wat alle modellen te zien krijgen** |
 | `4a_gray.png` | lijnschade: grijze kaart |
 | `4a_highpass.png` | lijnschade: hoeveel lichter elke pixel is dan zijn omgeving (×4 versterkt). Krassen en vouwen zijn hier lichte lijnen |
+| `4a_bright.png` | lijnschade: de pixels boven `LINES_BRIGHT`, de invoer van Hough |
+| `4a_lines.png` | lijnschade: de gevonden Hough-lijnen (geel = telt mee, blauw = langs het kader) |
+| `4_color.png`, `4_color.json` | kleur: het stuk van de kaart waar het model naar kijkt en de kans per kleur |
 
 Tip: denkt het model dat een gave kaart beschadigd is, open dan `4a_highpass.png` van die kaart. Je ziet dan meestal welke lichte lijn de score omhoog trekt.
 Zonder `--debug` wordt er niets opgeslagen.

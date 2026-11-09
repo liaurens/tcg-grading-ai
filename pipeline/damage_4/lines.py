@@ -56,14 +56,14 @@ def preprocess(card: np.ndarray, show: ShowFn = no_show) -> np.ndarray:
         m = config.LINES_MARGIN_PX
         inner = highpass[m:-m, m:-m]
         bright = (inner > config.LINES_BRIGHT).astype(np.uint8) * 255
-        show(bright, "4b_bright")
+        show(bright, "4a_bright")
         found = cv2.cvtColor(bright, cv2.COLOR_GRAY2BGR)
         for segment in find_lines(inner):
             # yellow = diagonal (counts as feature), blue = along the frame (ignored)
             diagonal = _angle_from_axis(segment) >= config.LINES_MIN_ANGLE_DEG
             x1, y1, x2, y2 = segment
             cv2.line(found, (x1, y1), (x2, y2), (0, 255, 255) if diagonal else (255, 120, 0), 3)
-        show(found, "4c_lines")
+        show(found, "4a_lines")
     return highpass
 
 
