@@ -1,16 +1,17 @@
-"""Step 4: which card is it? Game (MTG/Pokémon) and side (front/back).
+"""Step 4: which color card is it? Red, green, blue, black or white.
 
-Two models, each with: load/save model, features, predict, train.
-Both work on the color card from step 3. OPEN: features + classifier type.
 """
 import cv2
 import numpy as np
 import joblib
+import json
+import matplotlib.pyplot as plt
 
 from pathlib import Path
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
+from pipeline import config
 
 MODEL_DIR = Path("models")
 COLOR_MODEL_PATH = MODEL_DIR / "color_model.joblib"
@@ -94,6 +95,64 @@ def predict(
     """Predict white, green, black, blue or red."""
     return str(model.predict([features])[0])
 
+def predict_debug(
+    model: object,
+    card: np.ndarray,
+    feature_vector: np.ndarray,
+    card_name: str
+) -> str:
+    """Predict card color and save debug information."""
+
+    # Extract ROI again for visualization
+    roi = card[
+        int(880 * 0.62):int(880 * 0.92),
+        int(630 * 0.12):int(630 * 0.88)
+    ]
+
+    # Predict color
+    prediction = str(model.predict([feature_vector])[0])
+
+    # Get probabilities for each color
+    probabilities = model.predict_proba([feature_vector])[0]
+    classes = model.classes_
+
+    # Save prediction results as JSON
+    result = {
+        "card": card_name,
+        "prediction": prediction,
+        "probabilities": {
+            color: round(float(probability), 4)
+            for color, probability in zip(classes, probabilities)
+        }
+    }
+
+    folder = config.DEBUG_DIR / card_name
+
+    json_path = folder / f"4_color.json"
+
+    with open(json_path, "w", encoding="utf-8") as file:
+        json.dump(result, file, indent=4)
+
+    # Create debug visualization
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+    # Show ROI
+    axes[0].imshow(cv2.cvtColor(roi, cv2.COLOR_BGR2RGB))
+    axes[0].set_title("Color detection ROI")
+    axes[0].axis("off")
+
+    # Show probabilities
+    axes[1].bar(classes, probabilities)
+    axes[1].set_ylim(0, 1)
+    axes[1].set_title(f"Predicted color: {prediction}")
+    axes[1].set_ylabel("Probability")
+
+    plt.tight_layout()
+
+    plt.savefig(folder / f"4_color.png")
+    plt.close(fig)
+
+    return prediction
 
 def train(
     features: list[np.ndarray],

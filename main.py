@@ -25,9 +25,19 @@ def run_if_built(step: Callable[[], object], result: report_6.CardResult) -> obj
 # Features before load_model in the 3 functions below: a model's preprocessing and debug
 # images can be built and checked before any model is trained.
 
-def predict_color(card) -> str:
+def predict_color(card, debug=False, card_name="card") -> str:
     features = identify_color_4.features(card)
-    return identify_color_4.predict(identify_color_4.load_model(), features)
+    model = identify_color_4.load_model()
+
+    if debug:
+        return identify_color_4.predict_debug(
+            model,
+            card,
+            features,
+            card_name
+        )
+
+    return identify_color_4.predict(model, features)
 
 
 def damage_score(model, card, show) -> float:
@@ -55,7 +65,10 @@ def grade_card(path: Path, debug: bool) -> report_6.CardResult:
 
     # step 4: which card color. Models are loaded only here, so cropping works without any model.
     # TODO: load once for all photos as soon as the models exist
-    result.color = run_if_built(lambda: predict_color(card), result)
+    result.color = run_if_built(
+        lambda: predict_color(card, debug, card_name), 
+        result
+    )
 
     # step 5: every damage model on its own (the lambda runs right away, inside this loop turn)
     for name, model in damage_5.MODELS.items():
