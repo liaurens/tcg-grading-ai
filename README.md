@@ -80,17 +80,15 @@ Uitleg per stap (wat, waarom, hoe): [`docs/pipeline.md`](docs/pipeline.md).
 
 ## 3. Installeren
 
-Python 3.12 of nieuwer:
+Python 3.12:
 
 ```powershell
-python -m venv .venv
+python -3.12 -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
 Alle versies staan vast in `requirements.txt` (NumPy, OpenCV, scikit-learn, joblib), zodat iedereen hetzelfde resultaat krijgt.
-
-> **Windows Smart App Control** blokkeert een DLL van scipy, en daardoor werkt scikit-learn niet. Zet Smart App Control uit. Let op: het kan daarna niet meer aan zonder Windows opnieuw te installeren.
 
 **Activeer de venv altijd eerst** (`.venv\Scripts\activate`; je ziet dan `(.venv)` voor je prompt) en **draai alle commando's vanuit de projectmap**.
 

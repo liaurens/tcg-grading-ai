@@ -130,7 +130,7 @@ def predict_debug(
 
     folder = config.DEBUG_DIR / card_name
 
-    json_path = folder / f"4_color.json"
+    json_path = folder / f"3_color.json"
 
     with open(json_path, "w", encoding="utf-8") as file:
         json.dump(result, file, indent=4)
@@ -151,7 +151,7 @@ def predict_debug(
 
     plt.tight_layout()
 
-    plt.savefig(folder / f"4_color.png")
+    plt.savefig(folder / f"3_color.png")
     plt.close(fig)
 
     return prediction
