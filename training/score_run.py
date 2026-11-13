@@ -3,6 +3,7 @@
 Only when every photo is named <kleur>_<schade>_<nr> (our dataset); otherwise main.py skips this.
 The split of a photo is looked up by its file name in config.DATASET_DIR/<split>/ (every name is
 in exactly one split). Expected verdict: geen -> goed; kras, vouw, scheur, mix -> beschadigd.
+Tear cards (scheur) count in the damage table and the missed list since the tear model exists (2026-11-13).
 """
 from pathlib import Path
 
@@ -77,35 +78,34 @@ def _color_table(groups, order) -> list[str]:
 
 
 def _damage_table(groups, order) -> list[str]:
-    """Final verdict goed/beschadigd. Tears (scheur) are left out: the tear model is not built yet."""
-    out = ["SCHADE, eindoordeel goed/beschadigd (scheur-kaarten niet meegeteld: scheurmodel nog niet gebouwd)",
-           f"  {'split':9s} {'n':>4s}  accuracy  precision  recall  F1  gave afgekeurd  kras gevonden  vouw gevonden"]
+    """Final verdict goed/beschadigd over all cards (tears count since the tear model exists, 2026-11-13)."""
+    out = ["SCHADE, eindoordeel goed/beschadigd",
+           f"  {'split':9s} {'n':>4s}  accuracy  precision  recall  F1  gave afgekeurd  kras gevonden  vouw gevonden  scheur gevonden"]
     for name in order:
-        pairs = [(r, s) for r, s in _usable(groups[name]) if s.schade != "scheur"]
+        pairs = _usable(groups[name])
         acc, prec, rec, f1 = _binary([(r.damage == "beschadigd", s.schade != "geen") for r, s in pairs])
 
         def found(kind):
             same = [r for r, s in pairs if s.schade == kind]
             return f"{sum(r.damage == 'beschadigd' for r in same)}/{len(same)}"
         out.append(f"  {name:9s} {len(pairs):4d}  {acc:>8s}  {prec:>9s}  {rec:>6s}  {f1:>4s}  {found('geen'):>14s}  "
-                   f"{found('kras'):>13s}  {found('vouw'):>13s}")
+                   f"{found('kras'):>13s}  {found('vouw'):>13s}  {found('scheur'):>15s}")
     return out + [""]
 
 
 def _wrong_cards(groups, order) -> list[str]:
-    """Names of the wrong cards per split, with the lines score, so you can look them up with --debug."""
+    """Names of the wrong cards per split, with the score of every damage model, so you can look them up with --debug."""
     def score(r):
-        s = r.damage_scores.get("lines")
-        return "-" if s is None else f"{s:.2f}"
+        return " ".join(f"{model} {'-' if s is None else f'{s:.2f}'}" for model, s in r.damage_scores.items())
 
-    out = ["FOUTE KAARTEN (score = lines-score)"]
+    out = ["FOUTE KAARTEN (score per schademodel)"]
     for name in order:
         pairs = groups[name]
         errors = [r.photo for r, s in pairs if r.error is not None]
         color = [f"{r.photo} ({r.color})" for r, s in _usable(pairs) if r.color != COLOR_NAMES.get(s.kleur)]
         rejected = [f"{r.photo} ({score(r)})" for r, s in _usable(pairs) if s.schade == "geen" and r.damage == "beschadigd"]
         missed = [f"{r.photo} ({score(r)})" for r, s in _usable(pairs)
-                  if s.schade not in ("geen", "scheur") and r.damage == "goed"]
+                  if s.schade != "geen" and r.damage == "goed"]
         out.append(f"  {name}:")
         out.append(f"    verkeerde kleur ({len(color)}): {', '.join(color) or '-'}")
         out.append(f"    gave kaart afgekeurd ({len(rejected)}): {', '.join(rejected) or '-'}")

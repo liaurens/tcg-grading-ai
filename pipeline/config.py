@@ -43,11 +43,20 @@ LINES_MIN_ANGLE_DEG = 3     # only diagonal lines count: the printed frame is wi
 LINES_LENGTH_CLASSES_MM = [(6, 15), (15, 30), (30, 60), (60, 1000)]  # per class: how many lines and their total length (8 features)
 LINES_MODEL_FILE = MODELS_DIR / "lines.joblib"  # joblib: the save format scikit-learn recommends
 
+# Tear model (step 4b): white paper core that shows where the card is torn (decisions 2026-11-13)
+# "Whiteness" of a pixel = the smallest of its B, G, R values: high only when the pixel is light AND uncolored.
+TEAR_MARGIN_PX = 20         # skip the outer 2 mm: the white background the crop left there (up to ~15 px) would count as paper
+TEAR_HIST_EDGES = [150, 170, 180, 190, 200, 210, 220, 230, 240, 250, 256]  # whiteness bins (below 150 = print, left out): 10 histogram features
+TEAR_HIST_SCALE = 10000     # same reason as LINES_HIST_SCALE: fractions of 1e-4 stay visible after log1p
+TEAR_WHITE = 225            # whiteness above which a pixel counts as bare paper (torn paper ~210-240; text boxes and name bars mostly below; 225 best of 200/215/225 in CV)
+TEAR_AREA_CLASSES_MM2 = [(0.3, 1), (1, 3), (3, 10), (10, 10000)]  # blob size classes; per class: how many blobs and their total area (8 features). Below 0.3 mm2 = specks of glare, not counted
+TEAR_MODEL_FILE = MODELS_DIR / "tear.joblib"
+
 # Combine (step 4c): "beschadigd" as soon as one built damage model scores >= its own threshold (decision 2026-11-07).
 # Models that are not built yet (score None) are skipped; result.json lists which models were checked.
 DAMAGE_THRESHOLDS = {
     "lines": 0.5,  # CV: 0.5 -> good cards rejected 4%, recall 70%; 0.4/0.3 reject more good cards, precision drops (2026-11-07)
-    "tear": 0.5,   # placeholder until tear.py is built: choose with that model's own validation
+    "tear": 0.5,   # validate: 0.5 -> 9/10 tears found, 0/30 good cards rejected; the missed tears score 0.06-0.22, so a lower threshold would not find them (2026-11-13)
 }
 
 # Report (step 5)
