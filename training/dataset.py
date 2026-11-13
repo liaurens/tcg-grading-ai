@@ -4,6 +4,7 @@ Every model gets its own label per photo (decisions 2026-11-02 and 2026-11-05):
     kras, vouw -> lines = 1    scheur -> tear = 1
     geen       -> 0 for every damage model
     scheur     -> lines = 0
+    kras, vouw -> tear = None: not used for the tear model (decision 2026-11-13)
     mix        -> None: which damage is on it is not known yet, so not used for now
 Only MTG fronts: game and side are out of scope (decision 2026-11-07).
 
@@ -29,7 +30,9 @@ class Sample:
 # damage word in the file name -> label per model. Missing = None = photo not used for that model.
 LABELS = {
     "lines": {"kras": 1, "vouw": 1, "geen": 0, "scheur": 0},  # decision 2026-11-05
-    "tear": {"scheur": 1, "geen": 0},  # OPEN: kras/vouw for tear (owner of tear.py decides)
+    # kras/vouw not used (decision 2026-11-13): a crease shows white paper just like a tear, as label 0 it
+    # pulled tear recall down to ~60% in CV; without them ~85%. A creased card that scores high is "beschadigd" anyway.
+    "tear": {"scheur": 1, "geen": 0},
 }
 
 # folder name -> part of the split (decision 2026-11-05: use the existing folders)

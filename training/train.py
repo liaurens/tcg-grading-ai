@@ -25,7 +25,8 @@ MODEL_NAMES = [*damage_4.MODELS]
 REPORT_THRESHOLD = 0.5
 CLASS_NAMES = ["goed", "beschadigd"]  # label 0 / label 1
 # photos that are left out of the report per model: the lines model does not look for tears,
-# so a `scheur` photo is neither a hit nor a miss (the tear model is not built yet)
+# so a `scheur` photo is neither a hit nor a miss (tears are the tear model's job).
+# The tear model needs no entry: kras/vouw photos have no tear label (dataset.LABELS), so they are never loaded for it.
 REPORT_SKIP = {"lines": frozenset({"scheur"})}
 
 
