@@ -105,7 +105,7 @@ def predict_debug(
 ) -> str:
     """Predict card color and save debug information."""
 
-    # Extract ROI again for visualization
+    # Extract ROI
     roi = card[
         int(880 * 0.62):int(880 * 0.92),
         int(630 * 0.12):int(630 * 0.88)
@@ -114,9 +114,27 @@ def predict_debug(
     # Predict color
     prediction = str(model.predict([feature_vector])[0])
 
-    # Get probabilities for each color
+    # Get probabilities
     probabilities = model.predict_proba([feature_vector])[0]
     classes = model.classes_
+
+    # Extract HSV histogram
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+
+    histogram = cv2.calcHist(
+        [hsv],
+        [0, 1],
+        None,
+        [18, 8],
+        [0, 180, 0, 256]
+    )
+
+    cv2.normalize(
+        histogram,
+        histogram,
+        alpha=1,
+        norm_type=cv2.NORM_L1
+    )
 
     # Save prediction results as JSON
     result = {
@@ -125,33 +143,45 @@ def predict_debug(
         "probabilities": {
             color: round(float(probability), 4)
             for color, probability in zip(classes, probabilities)
-        }
+        },
+        "histogram": histogram.flatten().round(6).tolist()
     }
 
     folder = config.DEBUG_DIR / card_name
+    folder.mkdir(parents=True, exist_ok=True)
 
-    json_path = folder / f"3_color.json"
+    json_path = folder / "3_color.json"
 
     with open(json_path, "w", encoding="utf-8") as file:
         json.dump(result, file, indent=4)
 
     # Create debug visualization
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    fig, axes = plt.subplots(1, 3, figsize=(17, 5))
 
-    # Show ROI
+    # 1. Show ROI
     axes[0].imshow(cv2.cvtColor(roi, cv2.COLOR_BGR2RGB))
     axes[0].set_title("Color detection ROI")
     axes[0].axis("off")
 
-    # Show probabilities
-    axes[1].bar(classes, probabilities)
-    axes[1].set_ylim(0, 1)
-    axes[1].set_title(f"Predicted color: {prediction}")
-    axes[1].set_ylabel("Probability")
+    # 2. Show HSV histogram
+    axes[1].imshow(
+        histogram,
+        aspect="auto",
+        origin="lower",
+        cmap="viridis"
+    )
+    axes[1].set_title("HSV color histogram")
+    axes[1].set_xlabel("Hue bins (18)")
+    axes[1].set_ylabel("Saturation bins (8)")
+
+    # 3. Show probabilities
+    axes[2].bar(classes, probabilities)
+    axes[2].set_ylim(0, 1)
+    axes[2].set_title(f"Predicted color: {prediction}")
+    axes[2].set_ylabel("Probability")
 
     plt.tight_layout()
-
-    plt.savefig(folder / f"3_color.png")
+    plt.savefig(folder / "3_color.png")
     plt.close(fig)
 
     return prediction
